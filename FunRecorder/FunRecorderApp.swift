@@ -5,7 +5,7 @@ import SwiftData
 struct FunRecorderApp: App {
     var body: some Scene {
         WindowGroup {
-            Text("Loading…")
+            ContentView()
         }
         .modelContainer(for: Clip.self)
     }
