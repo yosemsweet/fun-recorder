@@ -31,4 +31,16 @@ final class ClipTests: XCTestCase {
         )
         XCTAssertEqual(clip.sampleRate, 32000)
     }
+
+    func test_regionTime_returnsZeroWhenSampleRateIsZero() {
+        let clip = Clip(
+            name: "Test", duration: 5,
+            audioFileName: "test.wav",
+            regionStartSamples: 16000,
+            regionEndSamples: 32000,
+            sampleRate: 0
+        )
+        XCTAssertEqual(clip.regionStartTime, 0)
+        XCTAssertEqual(clip.regionEndTime, 0)
+    }
 }

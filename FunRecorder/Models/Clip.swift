@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 final class Clip {
-    var id: UUID
+    @Attribute(.unique) var id: UUID
     var name: String
     var createdAt: Date
     var duration: TimeInterval
@@ -35,10 +35,12 @@ final class Clip {
     }
 
     var regionStartTime: TimeInterval {
-        TimeInterval(regionStartSamples) / TimeInterval(sampleRate)
+        guard sampleRate > 0 else { return 0 }
+        return TimeInterval(regionStartSamples) / TimeInterval(sampleRate)
     }
 
     var regionEndTime: TimeInterval {
-        TimeInterval(regionEndSamples) / TimeInterval(sampleRate)
+        guard sampleRate > 0 else { return 0 }
+        return TimeInterval(regionEndSamples) / TimeInterval(sampleRate)
     }
 }
