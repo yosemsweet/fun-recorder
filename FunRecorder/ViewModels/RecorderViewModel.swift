@@ -9,7 +9,7 @@ final class RecorderViewModel {
     private(set) var beatGrid: BeatGrid?
     private(set) var currentDuration: TimeInterval = 0
     private(set) var currentURL: URL?
-    private(set) var pendingSaveName: String? = nil  // Non-nil while rename field is shown
+    var pendingSaveName: String? = nil  // Non-nil while rename field is shown
 
     var regionStartSamples: Int = 0
     var regionEndSamples: Int = 0
