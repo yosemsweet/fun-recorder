@@ -86,7 +86,7 @@ struct ContentView: View {
                         "Clip name",
                         text: Binding(
                             get: { viewModel.pendingSaveName ?? "" },
-                            set: { viewModel.pendingSaveName = $0 }
+                            set: { viewModel.pendingSaveName = $0.isEmpty ? nil : $0 }
                         )
                     )
                     .textFieldStyle(.roundedBorder)
