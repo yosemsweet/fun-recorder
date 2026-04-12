@@ -75,6 +75,7 @@ final class AudioPlayer {
 
     private func scheduleAndPlay(file: AVAudioFile, from startFrame: AVAudioFramePosition) {
         playerNode.stop()
+        guard regionEnd > regionStart else { return }
         let clampedStart = max(regionStart, min(regionEnd - 1, startFrame))
         scheduleSegment(file: file, startFrame: clampedStart)
         if !engine.isRunning { try? engine.start() }
@@ -86,31 +87,34 @@ final class AudioPlayer {
         let frameCount = AVAudioFrameCount(max(0, regionEnd - startFrame))
         guard frameCount > 0 else { return }
 
+        // Capture region bounds now so the closure doesn't need self for region position
+        let loopStart = regionStart
+        let loopEnd = regionEnd
+
         playerNode.scheduleSegment(
             file,
             startingFrame: startFrame,
             frameCount: frameCount,
             at: nil,
-            completionCallbackType: .dataConsumed  // Fires while buffer still in hardware queue
+            completionCallbackType: .dataConsumed
         ) { [weak self] _ in
-            guard let self, self.isLooping else {
+            guard let self else { return }
+            guard self.isLooping else {
                 Task { @MainActor [weak self] in self?.handleNonLoopEnd() }
                 return
             }
-            // Pre-schedule the next loop iteration before current one ends (gapless)
-            let loopFrameCount = AVAudioFrameCount(max(0, self.regionEnd - self.regionStart))
-            if loopFrameCount > 0 {
-                self.playerNode.scheduleSegment(
-                    file, startingFrame: self.regionStart, frameCount: loopFrameCount, at: nil,
-                    completionCallbackType: .dataConsumed
-                ) { [weak self] _ in
-                    self?.scheduleSegment(file: file, startFrame: self?.regionStart ?? 0)
-                }
+            let nextFrameCount = AVAudioFrameCount(max(0, loopEnd - loopStart))
+            guard nextFrameCount > 0 else { return }
+            self.playerNode.scheduleSegment(
+                file, startingFrame: loopStart, frameCount: nextFrameCount, at: nil,
+                completionCallbackType: .dataConsumed
+            ) { [weak self] _ in
+                self?.scheduleSegment(file: file, startFrame: self?.regionStart ?? loopStart)
             }
         }
     }
 
-    private func handleNonLoopEnd() {
+    @MainActor private func handleNonLoopEnd() {
         isPlaying = false
         playheadTime = Double(regionStart) / (audioFile?.processingFormat.sampleRate ?? 32000)
         stopPlayheadTimer()
