@@ -1,0 +1,32 @@
+name: FunRecorder
+options:
+  bundleIdPrefix: com.funrecorder
+  deploymentTarget:
+    iOS: "17.0"
+targets:
+  FunRecorder:
+    type: application
+    platform: iOS
+    sources: [FunRecorder]
+    settings:
+      SWIFT_VERSION: "5.9"
+      PRODUCT_BUNDLE_IDENTIFIER: com.funrecorder.app
+      INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    info:
+      path: FunRecorder/Info.plist
+      properties:
+        NSMicrophoneUsageDescription: "fun-recorder uses the microphone to capture your musical ideas."
+        UIRequiresFullScreen: true
+    dependencies:
+      - package: DSWaveformImage
+        product: DSWaveformImageViews
+  FunRecorderTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [FunRecorderTests]
+    dependencies:
+      - target: FunRecorder
+packages:
+  DSWaveformImage:
+    url: https://github.com/dmrschmidt/DSWaveformImage
+    from: "9.0.0"
