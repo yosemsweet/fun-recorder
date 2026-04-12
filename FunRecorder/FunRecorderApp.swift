@@ -7,6 +7,6 @@ struct FunRecorderApp: App {
         WindowGroup {
             Text("Loading…")
         }
-        .modelContainer(for: [])
+        .modelContainer(for: Clip.self)
     }
 }
