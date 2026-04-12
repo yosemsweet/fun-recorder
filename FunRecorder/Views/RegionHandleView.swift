@@ -47,8 +47,8 @@ struct RegionHandleView: View {
         .gesture(
             DragGesture(minimumDistance: 1, coordinateSpace: .named("waveform"))
                 .onChanged { value in
-                    let newX = xPos + value.translation.width
-                    let fraction = max(0, min(1, Double(newX / containerWidth)))
+                    // value.location is absolute position in "waveform" coordinate space
+                    let fraction = max(0, min(1, Double(value.location.x / containerWidth)))
                     onDrag(fraction)
                 }
         )

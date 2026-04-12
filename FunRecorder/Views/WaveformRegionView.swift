@@ -13,6 +13,7 @@ struct WaveformRegionView: View {
     let beatLabel: (Double) -> String?
 
     @State private var zoomScale: CGFloat = 1.0
+    @State private var baseZoomScale: CGFloat = 1.0
     @State private var startTooltip: String? = nil
     @State private var endTooltip: String? = nil
 
@@ -63,7 +64,7 @@ struct WaveformRegionView: View {
                         let time = newFraction * duration
                         let snapped = beatGrid?.nearestSixteenth(to: time) ?? time
                         startTooltip = beatLabel(snapped)
-                        let newSamples = Int(snapped * Self.sampleRate)
+                        let newSamples = min(Int(snapped * Self.sampleRate), regionEndSamples - Int(Self.sampleRate))
                         onRegionChanged(newSamples, regionEndSamples)
                     }
 
@@ -77,7 +78,7 @@ struct WaveformRegionView: View {
                         let time = newFraction * duration
                         let snapped = beatGrid?.nearestSixteenth(to: time) ?? time
                         endTooltip = beatLabel(snapped)
-                        let newSamples = Int(snapped * Self.sampleRate)
+                        let newSamples = max(Int(snapped * Self.sampleRate), regionStartSamples + Int(Self.sampleRate))
                         onRegionChanged(regionStartSamples, newSamples)
                     }
                 }
@@ -85,7 +86,13 @@ struct WaveformRegionView: View {
             }
             .gesture(
                 MagnificationGesture()
-                    .onChanged { value in zoomScale = max(1, min(8, zoomScale * value)) }
+                    .onChanged { value in
+                        zoomScale = max(1, min(8, baseZoomScale * value))
+                    }
+                    .onEnded { value in
+                        zoomScale = max(1, min(8, baseZoomScale * value))
+                        baseZoomScale = zoomScale
+                    }
             )
         }
         .frame(height: waveformHeight)
