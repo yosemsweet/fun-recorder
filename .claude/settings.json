@@ -2,5 +2,19 @@
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true,
     "ralph-loop@claude-plugins-official": true
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "xcodebuild build -scheme FunRecorder -destination 'platform=iOS Simulator,name=iPhone 17 Pro' 2>&1 | tail -30",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
   }
 }
