@@ -11,7 +11,7 @@ Milestone 1 of fun-recorder. Handles recording, beat detection, playback, wavefo
 | `FunRecorder/Audio/BeatDetector.swift` | `BeatGrid` struct + pure-Swift Accelerate-based tempo detection |
 | `FunRecorder/ViewModels/RecorderViewModel.swift` | `@Observable` state coordinator; AppState machine (empty/recording/editing) |
 | `FunRecorder/Views/LiveWaveformView.swift` | Scrolling Canvas amplitude bars during recording |
-| `FunRecorder/Views/WaveformRegionView.swift` | Static waveform (DSWaveformImage) + beat grid + draggable region handles |
+| `FunRecorder/Views/WaveformRegionView.swift` | Static waveform (custom Canvas + AVAudioFile amplitude loader) + beat grid + draggable region handles |
 | `FunRecorder/Views/BeatGridOverlay.swift` | Canvas overlay: 16th-note beat grid lines at variable heights/opacities |
 | `FunRecorder/Views/RegionHighlightView.swift` | Canvas overlay: dims audio outside selected region |
 | `FunRecorder/Views/RegionHandleView.swift` | Single 44pt draggable handle with tooltip |
@@ -29,7 +29,7 @@ Microphone → AVAudioEngine inputNode tap (Float32, 32kHz mono)
 After recording:
 WAV file → BeatDetector.detect (Accelerate) → BeatGrid (16th positions)
 WAV file → AudioPlayer.load → AVAudioPlayerNode.scheduleSegment (region loop)
-WAV file → WaveformRegionView → DSWaveformImage render + Canvas overlays
+WAV file → WaveformRegionView → AVAudioFile amplitude loader (vDSP_rmsqv) → Canvas bar renderer + overlays
 ```
 
 ## Beat Detection Algorithm
