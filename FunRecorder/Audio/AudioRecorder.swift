@@ -23,8 +23,10 @@ final class AudioRecorder {
     private var audioFile: AVAudioFile?
     private var recordedFrameCount: AVAudioFrameCount = 0
     private var autoStopTimer: Timer?
+    private var converter: AVAudioConverter?
+    private var resampleBuffer: AVAudioPCMBuffer?   // Pre-allocated; avoids per-callback heap allocation
 
-    // AVAudioEngine tap requires float32; we write 16-bit PCM to disk
+    // Float32 required by AVAudioEngine tap; AVAudioFile converts to Int16 PCM on write
     private static let tapFormat = AVAudioFormat(
         commonFormat: .pcmFormatFloat32,
         sampleRate: sampleRate,
@@ -63,7 +65,13 @@ final class AudioRecorder {
         recordedURL = url
 
         let inputNode = engine.inputNode
-        inputNode.installTap(onBus: 0, bufferSize: 4096, format: Self.tapFormat) { [weak self] buffer, _ in
+        let hwFormat = inputNode.outputFormat(forBus: 0)
+        if hwFormat.sampleRate != Self.sampleRate {
+            converter = AVAudioConverter(from: hwFormat, to: Self.tapFormat)
+            let maxOutputFrames = AVAudioFrameCount(Double(4096) * Self.sampleRate / hwFormat.sampleRate + 4)
+            resampleBuffer = AVAudioPCMBuffer(pcmFormat: Self.tapFormat, frameCapacity: maxOutputFrames)
+        }
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: nil) { [weak self] buffer, _ in
             self?.handleBuffer(buffer)
         }
         try engine.start()
@@ -84,6 +92,8 @@ final class AudioRecorder {
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         recordedDuration = TimeInterval(recordedFrameCount) / Self.sampleRate
         audioFile = nil
+        converter = nil
+        resampleBuffer = nil
         state = .finished
     }
 
@@ -98,33 +108,53 @@ final class AudioRecorder {
 
     // MARK: - Private
 
+    private func resample(_ inBuffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+        guard let converter, let output = resampleBuffer else { return inBuffer }
+        var consumed = false
+        var convError: NSError?
+        converter.convert(to: output, error: &convError) { _, outStatus in
+            if consumed { outStatus.pointee = .noDataNow; return nil }
+            outStatus.pointee = .haveData
+            consumed = true
+            return inBuffer
+        }
+        return convError == nil ? output : nil
+    }
+
     private func handleBuffer(_ buffer: AVAudioPCMBuffer) {
+        guard let processBuffer = resample(buffer) else { return }
         guard recordedFrameCount < Self.maxFrames, let audioFile else { return }
 
         let remaining = Self.maxFrames - recordedFrameCount
-        let framesToWrite = min(buffer.frameLength, remaining)
+        let framesToWrite = min(processBuffer.frameLength, remaining)
 
         if framesToWrite > 0 {
-            if let trimmed = buffer.trimmedCopy(frameCount: framesToWrite) {
-                // AVAudioFile converts float32 → int16 automatically based on write settings
-                try? audioFile.write(from: trimmed)
-                recordedFrameCount += framesToWrite
+            let bufferToWrite: AVAudioPCMBuffer
+            if framesToWrite == processBuffer.frameLength {
+                bufferToWrite = processBuffer
+            } else if let trimmed = processBuffer.trimmedCopy(frameCount: framesToWrite) {
+                bufferToWrite = trimmed
+            } else {
+                return
             }
+            // AVAudioFile converts float32 → int16 automatically based on write settings
+            try? audioFile.write(from: bufferToWrite)
+            recordedFrameCount += framesToWrite
         }
 
-        // Compute RMS amplitude for live waveform visualization
-        if let channelData = buffer.floatChannelData {
+        if recordedFrameCount >= Self.maxFrames {
+            Task { @MainActor [weak self] in self?.stop() }
+            return
+        }
+
+        if let channelData = processBuffer.floatChannelData {
             var rms: Float = 0
-            vDSP_rmsqv(channelData[0], 1, &rms, vDSP_Length(buffer.frameLength))
+            vDSP_rmsqv(channelData[0], 1, &rms, vDSP_Length(processBuffer.frameLength))
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.levels.append(rms)
                 if self.levels.count > 300 { self.levels.removeFirst() }
             }
-        }
-
-        if recordedFrameCount >= Self.maxFrames {
-            Task { @MainActor [weak self] in self?.stop() }
         }
     }
 
