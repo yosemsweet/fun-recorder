@@ -135,7 +135,7 @@ struct ContentView: View {
                     Button { viewModel.isLooping.toggle() } label: {
                         Image(systemName: "repeat")
                             .font(.title2)
-                            .foregroundStyle(viewModel.isLooping ? .accentColor : .secondary)
+                            .foregroundStyle(viewModel.isLooping ? Color.accentColor : .secondary)
                     }
 
                     // Save

@@ -17,16 +17,9 @@ targets:
       properties:
         NSMicrophoneUsageDescription: "fun-recorder uses the microphone to capture your musical ideas."
         UIRequiresFullScreen: true
-    dependencies:
-      - package: DSWaveformImage
-        product: DSWaveformImageViews
   FunRecorderTests:
     type: bundle.unit-test
     platform: iOS
     sources: [FunRecorderTests]
     dependencies:
       - target: FunRecorder
-packages:
-  DSWaveformImage:
-    url: https://github.com/dmrschmidt/DSWaveformImage
-    from: "9.0.0"
