@@ -72,12 +72,11 @@ final class RecorderViewModel {
 
     // MARK: - Region selection
 
-    /// Updates region, enforcing minimum size of 1 second (32000 samples).
+    /// Updates region, clamped to the audio bounds. No minimum size enforced.
     func updateRegion(startSamples: Int, endSamples: Int) {
-        let minSamples = Int(AudioRecorder.sampleRate)  // 1 second
         let totalSamples = Int(currentDuration * AudioRecorder.sampleRate)
-        let clampedStart = max(0, min(startSamples, totalSamples - minSamples))
-        let clampedEnd = max(clampedStart + minSamples, min(endSamples, totalSamples))
+        let clampedStart = max(0, min(startSamples, totalSamples))
+        let clampedEnd = max(clampedStart, min(endSamples, totalSamples))
         regionStartSamples = clampedStart
         regionEndSamples = clampedEnd
         player.updateRegion(startSamples: clampedStart, endSamples: clampedEnd)
