@@ -115,7 +115,7 @@ struct WaveformRegionView: View {
                         let time = newFraction * duration
                         let snapped = beatGrid?.nearestSixteenth(to: time) ?? time
                         startTooltip = beatLabel(snapped)
-                        let newSamples = min(Int(snapped * Self.sampleRate), regionEndSamples - Int(Self.sampleRate))
+                        let newSamples = Int(snapped * Self.sampleRate)
                         onRegionChanged(newSamples, regionEndSamples)
                     }
 
@@ -129,7 +129,7 @@ struct WaveformRegionView: View {
                         let time = newFraction * duration
                         let snapped = beatGrid?.nearestSixteenth(to: time) ?? time
                         endTooltip = beatLabel(snapped)
-                        let newSamples = max(Int(snapped * Self.sampleRate), regionStartSamples + Int(Self.sampleRate))
+                        let newSamples = Int(snapped * Self.sampleRate)
                         onRegionChanged(regionStartSamples, newSamples)
                     }
                 }
